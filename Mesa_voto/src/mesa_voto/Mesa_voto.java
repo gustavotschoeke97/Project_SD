@@ -51,25 +51,33 @@ class Connection extends Thread {
             outToClient = new PrintWriter(clientSocket.getOutputStream());
             this.start();
         }catch(IOException e){System.out.println("Connection:" + e.getMessage());}
-    }
-    //=============================
-    public void run(){
-       
-            Scanner keyboardScanner = new Scanner(System.in);
-            String str;
-            while(!clientSocket.isClosed()){
-                //an echo server
-                str= keyboardScanner.nextLine();
-                outToClient.println(str);
-                System.out.println("T["+thread_number + "] mandou: "+str);
-                outToClient.flush();
-                try{
-                    str=inFromClient.readLine();
-                } catch(Exception E){};
-                System.out.println("Do cliente veio: "+ str);
-
-            }
         
+
+        try{
+        //=============================
+          // create a thread for reading from the keyboard and writing to the server
+          new Thread() {
+            public void run() {
+              Scanner keyboardScanner = new Scanner(System.in);
+              while(!clientSocket.isClosed()) {
+                String readKeyboard = keyboardScanner.nextLine();
+                outToClient.println(readKeyboard);
+                outToClient.flush();
+              }
+            }
+          }.start();
+
+          // the main thread loops reading from the server and writing to System.out
+          String messageFromServer;
+          while((messageFromServer = inFromClient.readLine()) != null)
+            System.out.println(messageFromServer);
+        } catch (IOException e) {
+          if(inFromClient == null)
+            System.out.println("\nErro no reader!");
+          System.out.println(e.getMessage());
+        } finally {
+          try { inFromClient.close(); } catch (Exception e) {}
+        }
     }
 } 
 
